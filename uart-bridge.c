@@ -21,8 +21,8 @@
 
 #define BUFFER_SIZE 2560
 
-#define UART0_TX 16
-#define UART0_RX 17
+#define UART0_TX 0
+#define UART0_RX 1
 
 #define UART1_TX 4
 #define UART1_RX 5
