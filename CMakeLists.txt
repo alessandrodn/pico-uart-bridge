@@ -8,7 +8,12 @@ project(pico_uart_bridge)
 
 pico_sdk_init()
 
-add_executable(uart_bridge uart-bridge.c usb-descriptors.c)
+add_executable(uart_bridge
+	uart-bridge.c
+	usb-descriptors.c
+	ws2812.c)
+
+pico_generate_pio_header(uart_bridge ${CMAKE_CURRENT_LIST_DIR}/ws2812.pio)
 
 target_include_directories(uart_bridge PUBLIC
 	./
@@ -16,6 +21,7 @@ target_include_directories(uart_bridge PUBLIC
 
 target_link_libraries(uart_bridge
 	hardware_flash
+	hardware_pio
 	pico_multicore
 	pico_stdlib
 	tinyusb_device)

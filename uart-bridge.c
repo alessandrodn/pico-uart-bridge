@@ -12,12 +12,18 @@
 #include <pico/stdlib.h>
 #include <string.h>
 #include <tusb.h>
+#include "ws2812.h"
 
 #if !defined(MIN)
 #define MIN(a, b) ((a > b) ? b : a)
 #endif /* MIN */
 
-#define LED_PIN 25
+#define LED_PIN 16
+
+#define WS2812_BIT_FREQ 800000
+// WS2812 Colors are specified as RED-GREEN-BLUE-0
+#define WS2812_WHITE ((8 << 24) | (8 << 16) | (8 << 8))
+#define WS2812_GREEN (8 << 16)
 
 #define BUFFER_SIZE 2560
 
@@ -228,7 +234,8 @@ void core1_entry(void)
 			}
 		}
 
-		gpio_put(LED_PIN, con);
+		// TODO: Fix LED OFF when disconneting the serials
+		// pixel_rgb_put(con ? WS2812_GREEN : 0);
 	}
 }
 
@@ -341,12 +348,13 @@ int main(void) {
 
 	multicore_reset_core1();
 
+    PIO pio = pio0;
+    ws2812_init(pio, LED_PIN, WS2812_BIT_FREQ);
+    pixel_rgb_put(WS2812_GREEN);
+
 	usbd_serial_init();
 
 	start_uarts();
-
-	gpio_init(LED_PIN);
-	gpio_set_dir(LED_PIN, GPIO_OUT);
 
 	multicore_launch_core1(core1_entry);
 	do {
