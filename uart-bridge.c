@@ -215,10 +215,16 @@ static inline void uart_read_bytes(uint8_t itf)
 	if (uart_is_readable(ui->inst)) {
 		mutex_enter_blocking(&ud->uart_mtx);
 
-		while (uart_is_readable(ui->inst) &&
-		       (ud->uart_pos < BUFFER_SIZE)) {
-			ud->uart_buffer[ud->uart_pos] = uart_getc(ui->inst);
-			ud->uart_pos++;
+		/*
+		 * Always drain the RX FIFO, otherwise the RX interrupt stays
+		 * asserted and the handler re-fires forever.
+		 * Drop bytes if the buffer is full.
+		 */
+		while (uart_is_readable(ui->inst)) {
+			const uint8_t ch = uart_getc(ui->inst);
+
+			if (ud->uart_pos < BUFFER_SIZE)
+				ud->uart_buffer[ud->uart_pos++] = ch;
 		}
 
 		mutex_exit(&ud->uart_mtx);
