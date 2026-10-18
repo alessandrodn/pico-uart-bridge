@@ -16,6 +16,12 @@ jobs:
             name: Raspberry Pi Pico
           - board: pico2
             name: Raspberry Pi Pico 2
+          - board: waveshare_rp2040_zero
+            name: Waveshare RP2040-Zero
+          - board: waveshare_rp2040_one
+            name: Waveshare RP2040-One
+          - board: waveshare_rp2350_zero
+            name: Waveshare RP2350-Zero
     steps:
       - name: 'Check out code'
         uses: actions/checkout@v4
