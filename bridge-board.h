@@ -5,7 +5,8 @@
 
 /* Preserve the original bridge wiring unless the board needs other pins. */
 #ifndef BRIDGE_UART0_TX_PIN
-#if defined(WAVESHARE_RP2040_ZERO) || defined(WAVESHARE_RP2040_ONE) || defined(WAVESHARE_RP2350_ZERO)
+#if defined(WAVESHARE_RP2040_ZERO) || defined(WAVESHARE_RP2040_ONE) || defined(WAVESHARE_RP2350_ZERO) || \
+defined(PIMORONI_TINY2040)
 #define BRIDGE_UART0_TX_PIN PICO_DEFAULT_UART_TX_PIN
 #else
 #define BRIDGE_UART0_TX_PIN 16
@@ -13,7 +14,8 @@
 #endif
 
 #ifndef BRIDGE_UART0_RX_PIN
-#if defined(WAVESHARE_RP2040_ZERO) || defined(WAVESHARE_RP2040_ONE) || defined(WAVESHARE_RP2350_ZERO)
+#if defined(WAVESHARE_RP2040_ZERO) || defined(WAVESHARE_RP2040_ONE) || defined(WAVESHARE_RP2350_ZERO) || \
+    defined(PIMORONI_TINY2040)
 #define BRIDGE_UART0_RX_PIN PICO_DEFAULT_UART_RX_PIN
 #else
 #define BRIDGE_UART0_RX_PIN 17

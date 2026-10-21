@@ -34,6 +34,8 @@ run without a status LED. RGB LEDs use the SDK's default color.
 | `waveshare_rp2040_zero` | GP0 / GP1 | GP4 / GP5 | WS2812, GP16 |
 | `waveshare_rp2040_one` | GP0 / GP1 | GP4 / GP5 | WS2812, GP16 |
 | `waveshare_rp2350_zero` | GP0 / GP1 | GP4 / GP5 | WS2812, GP16 |
+| `pimoroni_tiny2040_2mb` (2 MB) | GP0 / GP1 | GP4 / GP5 | Green GPIO LED, GP19 (active low) |
+| `pimoroni_tiny2040` (8 MB) | GP0 / GP1 | GP4 / GP5 | Green GPIO LED, GP19 (active low) |
 
 The bridge preserves its original Pico UART wiring rather than adopting the
 SDK's default UART pins for every board. Other SDK boards use that wiring unless
