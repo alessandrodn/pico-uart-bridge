@@ -14,6 +14,9 @@ pico_sdk_init()
 
 add_executable(uart_bridge uart-bridge.c usb-descriptors.c)
 
+target_compile_definitions(uart_bridge PRIVATE
+	PICO_DEFAULT_COLORED_STATUS_LED_ON_COLOR=0x080000)
+
 target_include_directories(uart_bridge PUBLIC
 	./
 	pico-sdk/lib/tinyusb/src)
