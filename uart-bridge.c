@@ -42,6 +42,8 @@ typedef struct {
 	uint8_t usb_buffer[BUFFER_SIZE];
 	uint32_t usb_pos;
 	mutex_t usb_mtx;
+	bool tx_enabled;
+	volatile uint8_t rx_valid_count;
 } uart_data_t;
 
 void uart0_irq_fn(void);
@@ -200,7 +202,19 @@ void core1_entry(void)
 			}
 		}
 
-		if (led_ready && con != led_state) {
+		if (colored_status_led_supported()) {
+			const int dual = UART_DATA[0].rx_valid_count == 8;
+
+			if (led_ready && dual != led_state) {
+				colored_status_led_set_state(false);
+				/* Allow the off frame to finish and the WS2812 to latch it. */
+				sleep_us(350);
+				if (colored_status_led_set_on_with_color(
+					dual ? PICO_DEFAULT_COLORED_STATUS_LED_ON_COLOR :
+					PICO_COLORED_STATUS_LED_COLOR_FROM_RGB(0, 0, 8)))
+					led_state = dual;
+			}
+		} else if (led_ready && con != led_state) {
 			if (status_led_set_state(con))
 				led_state = con;
 		}
@@ -221,7 +235,19 @@ static inline void uart_read_bytes(uint8_t itf)
 		 * Drop bytes if the buffer is full.
 		 */
 		while (uart_is_readable(ui->inst)) {
-			const uint8_t ch = uart_getc(ui->inst);
+			/* Read DR directly to retain the per-byte UART error flags. */
+			const uint32_t dr = uart_get_hw(ui->inst)->dr;
+			const uint8_t ch = (uint8_t)dr;
+
+			if (itf == 0 && ud->rx_valid_count < 8) {
+				const bool error = dr & (UART_UARTDR_FE_BITS |
+					UART_UARTDR_PE_BITS | UART_UARTDR_BE_BITS |
+					UART_UARTDR_OE_BITS);
+				const bool text = (ch >= 0x20 && ch <= 0x7e) ||
+					ch == '\r' || ch == '\n' || ch == '\t';
+
+				ud->rx_valid_count = !error && text ? ud->rx_valid_count + 1 : 0;
+			}
 
 			if (ud->uart_pos < BUFFER_SIZE)
 				ud->uart_buffer[ud->uart_pos++] = ch;
@@ -245,10 +271,21 @@ void uart_write_bytes(uint8_t itf)
 {
 	uart_data_t *ud = &UART_DATA[itf];
 
-	if (ud->usb_pos &&
+	if ((ud->usb_pos || !ud->tx_enabled) &&
 	    mutex_try_enter(&ud->usb_mtx, NULL)) {
 		const uart_id_t *ui = &UART_ID[itf];
 		uint32_t count = 0;
+
+		if (!ud->tx_enabled) {
+			/* Never queue host commands while the target is unidentified. */
+			ud->usb_pos = 0;
+			if (ud->rx_valid_count == 8) {
+				gpio_set_function(ui->tx_pin, GPIO_FUNC_UART);
+				ud->tx_enabled = true;
+			}
+			mutex_exit(&ud->usb_mtx);
+			return;
+		}
 
 		while (uart_is_writable(ui->inst) &&
 		       count < ud->usb_pos) {
@@ -271,8 +308,18 @@ void init_uart_data(uint8_t itf)
 	uart_data_t *ud = &UART_DATA[itf];
 
 	/* Pinmux */
-	gpio_set_function(ui->tx_pin, GPIO_FUNC_UART);
+	ud->tx_enabled = itf != 0;
+	ud->rx_valid_count = 0;
+	if (ud->tx_enabled) {
+		gpio_set_function(ui->tx_pin, GPIO_FUNC_UART);
+	} else {
+		/* GP0 reaches Link's BOOT input: do not drive it or enable pulls. */
+		gpio_init(ui->tx_pin);
+		gpio_disable_pulls(ui->tx_pin);
+	}
 	gpio_set_function(ui->rx_pin, GPIO_FUNC_UART);
+	if (itf == 0)
+		gpio_disable_pulls(ui->rx_pin);
 
 	/* USB CDC LC */
 	ud->usb_lc.bit_rate = DEF_BIT_RATE;
